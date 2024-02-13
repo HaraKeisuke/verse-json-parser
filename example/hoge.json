@@ -3,10 +3,5 @@
   "piyo": 1,
   "array_number": [1, 2, 3],
   "array_string": ["a", "b", "c"],
-  "array_boolean": [true, false, true],
-  "array_primitive": [1, "a", true],
-  "object": {
-    "a": "b",
-    "c": 2
-  }
+  "array_boolean": [true, false, true]
 }

@@ -10,10 +10,10 @@ export const transpileVerse = (name: string, json: JSON_FORMAT): string => {
 
   return (
     `${structs.map((s) => s).join("\n")}\n\n` +
-    `${name}_generated := struct =\n` +
+    `${name}_generated := struct:\n` +
     `${Object.keys(json)
       .map((key) => {
-        return `\t${key} := ${convertValue(key, json[key])};`;
+        return `\t${convertVariable(key, json[key])}`;
       })
       .join("\n")}`
   );
@@ -33,10 +33,34 @@ const convertNestStruct = (
   }
 
   const struct = Object.keys(value).map((k) => {
-    return [`${k} := ${convertValue(k, value[k])};`];
+    return [convertVariable(k, value[k])];
   });
 
-  return [`${key} := struct =\n` + `${struct.map((s) => `\t${s}`).join("\n")}`];
+  return [
+    `${key}_generated := struct:\n` +
+      `${struct.map((s) => `\t${s}`).join("\n")}`,
+  ];
+};
+
+const convertVariable = (key: string, value: JSON_FORMAT_VALUE): string => {
+  return `${key} :${convertType(value)}= ${convertValue(key, value)}`;
+};
+
+const convertType = (value: JSON_FORMAT_VALUE): string => {
+  if (typeof value === "string") {
+    return "string";
+  } else if (typeof value === "number") {
+    if (Number.isInteger(value)) {
+      return "int";
+    }
+    return "float";
+  } else if (typeof value === "boolean") {
+    return "logic";
+  } else if (Array.isArray(value)) {
+    return `[]${convertType(value[0])}`;
+  } else {
+    return "";
+  }
 };
 
 const convertValue = (
@@ -56,12 +80,22 @@ const convertValue = (
           typeof v !== "boolean"
       )
     ) {
-      console.log(value);
       throw new Error(`Array value of ${key} contains non-primitive value.`);
     }
 
-    return `array{${value.map((v) => v).join(", ")}}`;
+    if (
+      value.every((v) => typeof v === "string") ||
+      value.every((v) => typeof v === "number") ||
+      value.every((v) => typeof v === "boolean")
+    ) {
+      return `array{${value
+        .map((v) => (typeof v === "string" ? `"${v}"` : v))
+        .join(", ")}}`;
+    }
+
+    throw new Error(`Array value of ${key} contains different type value.`);
   } else {
-    return key;
+    throw new Error(`Unsupported value type: ${typeof value}`);
+    // return `${key}_generated`;
   }
 };
